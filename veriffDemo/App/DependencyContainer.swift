@@ -2,9 +2,7 @@ import Foundation
 
 @MainActor
 final class DependencyContainer {
-    private let demoSessionURL = "https://alchemy.veriff.com/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NzgzNTUyMTIsInNlc3Npb25faWQiOiJlMzZmYTMyNi1mZGJkLTQ2ODYtOGJhOS0zODFmN2JkMzdmNDUiLCJpaWQiOiIzMDlkMThjYS1iNWNkLTRkODAtYWJjYS04YTE1YTNhODEzOTciLCJ2aWQiOiI4ZmM0NjI3MS0yYmY3LTQwYWQtOWU4My1lMzkyYjI0YWNjMDQiLCJjaWQiOiJzYWFzLTQiLCJleHAiOjE3Nzg5NjAwMTJ9.Wz0z-6eMUhzEfgRphxNoVrK9lIaU3yZ40B7UtIKu44s"
-
-    private lazy var sessionRepository: SessionRepositoryProtocol = SessionRepository(demoSessionURL: demoSessionURL)
+    private lazy var sessionRepository: SessionRepositoryProtocol = makeSessionRepository()
     private lazy var verificationService: VerificationServiceProtocol = VeriffVerificationService()
 
     private lazy var createSessionUseCase: CreateVerificationSessionUseCaseProtocol = CreateVerificationSessionUseCase(repository: sessionRepository)
@@ -15,5 +13,22 @@ final class DependencyContainer {
             createSessionUseCase: createSessionUseCase,
             startVerificationUseCase: startVerificationUseCase
         )
+    }
+
+    // The app always creates a fresh session via Veriff's POST /v1/sessions.
+    // If Secrets.plist is missing or its API key is empty, return a repository that
+    // throws a clear `.missingConfiguration` so the failure surfaces in the UI
+    // instead of crashing on launch.
+    private func makeSessionRepository() -> SessionRepositoryProtocol {
+        guard let config = VeriffAPIConfig.loadFromBundle() else {
+            return UnconfiguredSessionRepository()
+        }
+        return HTTPSessionRepository(config: config)
+    }
+}
+
+private struct UnconfiguredSessionRepository: SessionRepositoryProtocol {
+    func createSession() async throws -> VerificationSession {
+        throw VerificationError.missingConfiguration
     }
 }

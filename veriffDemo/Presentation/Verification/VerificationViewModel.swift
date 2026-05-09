@@ -41,6 +41,7 @@ final class VerificationViewModel {
             return "Unexpected error"
         }
         switch domain {
+        case .missingConfiguration: return "Add VeriffAPIKey to veriffDemo/Secrets.plist and re-run"
         case .invalidSession: return "Invalid verification session"
         case .network: return "Network error"
         case .cameraUnauthorized: return "Camera permission denied"

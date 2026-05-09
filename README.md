@@ -2,7 +2,9 @@
 
 Demo iOS app showing how to integrate the [Veriff iOS SDK](https://github.com/Veriff/veriff-ios-spm) with Clean Architecture, SOLID principles, and modern SwiftUI.
 
-A single screen creates a verification session and launches the Veriff flow. Session creation is mocked — the real production path is documented in `SessionRepository.swift`.
+A single screen creates a verification session against Veriff's `POST /v1/sessions` and immediately launches the SDK with the resulting URL. Every tap produces a fresh session — there is no hardcoded URL.
+
+`HTTPSessionRepository` is the only `SessionRepositoryProtocol` implementation. It reads its config (API key + base URL) from a gitignored `Secrets.plist`. Without that file the app still launches but every verification attempt surfaces a clear "missing configuration" error in the UI, so the failure mode is discoverable instead of crashing.
 
 ## Architecture
 
@@ -21,6 +23,18 @@ Presentation  ──►  Domain  ◄──  Data
 
 ## Folder layout
 
+Project root:
+
+```
+veriffDemo/                 # main app target (synced folder, see structure below)
+veriffDemo.xcodeproj/
+.gitignore
+README.md
+Secrets.example.plist       # template for the runtime config; copy into veriffDemo/ to enable HTTP impl
+```
+
+App target:
+
 ```
 veriffDemo/
 ├── App/
@@ -38,8 +52,14 @@ veriffDemo/
 │       ├── CreateVerificationSessionUseCase.swift
 │       └── StartVerificationUseCase.swift
 ├── Data/                             # only layer that knows about Veriff
-│   ├── Mappers/VeriffResultMapper.swift          # VeriffSdk.Result → VerificationResult
-│   ├── Repositories/SessionRepository.swift      # demo impl + commented production reference
+│   ├── Configuration/VeriffAPIConfig.swift       # loads API key + base URL from Secrets.plist
+│   ├── DTOs/
+│   │   ├── CreateSessionRequestDTO.swift         # POST /v1/sessions request body
+│   │   └── CreateSessionResponseDTO.swift        # response shape
+│   ├── Mappers/
+│   │   ├── SessionMapper.swift                   # CreateSessionResponseDTO → VerificationSession
+│   │   └── VeriffResultMapper.swift              # VeriffSdk.Result → VerificationResult
+│   ├── Repositories/HTTPSessionRepository.swift  # POST /v1/sessions via URLSession
 │   └── Services/VeriffVerificationService.swift  # wraps the SDK delegate as async
 └── Presentation/
     ├── DesignSystem/
@@ -56,19 +76,43 @@ veriffDemo/
 ```
 VerificationView (button tap)
   └─ VerificationViewModel.startVerification()
-       ├─ CreateVerificationSessionUseCase.execute()         # Domain
-       │    └─ SessionRepository.createSession()              # Data — hardcoded URL today
-       │         └─ returns VerificationSession(id, url)
-       └─ StartVerificationUseCase.execute(session:)         # Domain
-            └─ VeriffVerificationService.start(session:)     # Data
+       ├─ CreateVerificationSessionUseCase.execute()              # Domain
+       │    └─ HTTPSessionRepository.createSession()              # Data
+       │         POST <baseURL>/v1/sessions
+       │         headers:  Content-Type: application/json
+       │                   X-AUTH-CLIENT: <api key from Secrets.plist>
+       │         body:     { "verification": {} }
+       │         response  → CreateSessionResponseDTO
+       │                   → SessionMapper.toDomain
+       │                   → VerificationSession(id, url)
+       └─ StartVerificationUseCase.execute(session:)              # Domain
+            └─ VeriffVerificationService.start(session:)          # Data
                  ├─ VeriffSdk.startAuthentication(sessionUrl:)
                  └─ delegate → VeriffResultMapper → VerificationResult
        => state = .completed | .cancelled | .failed
 ```
 
-## Where session creation should actually live
+If `Secrets.plist` is missing or its `VeriffAPIKey` is empty, `DependencyContainer` falls back to an internal `UnconfiguredSessionRepository` that throws `VerificationError.missingConfiguration`. The ViewModel maps that error to a user-visible message asking the developer to configure the file.
 
-`SessionRepository.createSession()` currently returns a hardcoded session URL. **An iOS app should never call Veriff's `POST /v1/sessions` directly in production.** The recommended architecture is:
+## Configuration
+
+The repo includes a `Secrets.example.plist` template at the project root. Setup steps:
+
+1. If `veriffDemo/Secrets.plist` does not exist, copy `Secrets.example.plist` into `veriffDemo/` and rename it to `Secrets.plist`.
+2. In Xcode (or any plist editor), set `VeriffAPIKey` to a real API key from your Veriff Customer Portal → API keys.
+3. Leave `VeriffBaseURL` as `https://stationapi.veriff.com` unless you have a different endpoint.
+4. Re-run the app.
+
+How the config is loaded:
+
+- `VeriffAPIConfig.loadFromBundle()` reads `Secrets.plist` from the app bundle, validates that both keys are present and `VeriffAPIKey` is non-empty, and returns a `VeriffAPIConfig`.
+- `DependencyContainer.makeSessionRepository()` returns `HTTPSessionRepository(config:)` when the config loads. Otherwise it returns an internal `UnconfiguredSessionRepository` that surfaces a clear error on first use — the app launches either way, so missing setup is obvious instead of fatal.
+
+`veriffDemo/Secrets.plist` is gitignored, so the key never enters version control.
+
+### A note on doing this in production
+
+The Veriff docs do not explicitly forbid calling `POST /v1/sessions` from a mobile app. It works for sandbox / personal exploration, but **in a real product it should not be done from the device.** The recommended architecture is:
 
 1. The iOS app calls **your own backend**, authenticated as the end-user.
 2. Your backend calls Veriff's `POST /v1/sessions` with the private `X-AUTH-CLIENT` API key.
@@ -76,12 +120,13 @@ VerificationView (button tap)
 4. The app passes that URL to the Veriff SDK.
 
 Why:
+
 - The Veriff API key never ships in the mobile binary (binaries are inspectable).
-- The session is bound to your authenticated user.
-- You can apply rate limiting, fraud signals, and analytics.
+- The session is bound to your authenticated user on your side.
+- You can apply rate limiting, fraud signals, and analytics centrally.
 - You persist the user ↔ Veriff session mapping for webhooks.
 
-A pseudo-code reference of `BackendSessionRepository` is included as a commented block in `Data/Repositories/SessionRepository.swift`. Because the protocol lives in Domain, swapping the implementation does not touch any other layer.
+Because `SessionRepositoryProtocol` lives in Domain, replacing `HTTPSessionRepository` with a `BackendSessionRepository` is a one-line change in `DependencyContainer`. Nothing else in the app would change — that is the practical payoff of the layered architecture.
 
 ## Design notes
 
@@ -112,13 +157,13 @@ Open `VerificationView.swift` and toggle the canvas (⌥⌘↩). Previews requir
 ## Running
 
 1. Open `veriffDemo.xcodeproj`.
-2. Select an iOS Simulator destination.
-3. Build and run.
+2. Configure `Secrets.plist` as described in **Configuration** above.
+3. Select an iOS Simulator destination (Previews and the SDK do not run on physical devices via Previews).
+4. Build and run.
 
-The hardcoded demo session URL is a JWT with a finite expiry. When it expires, replace the constant in `DependencyContainer.swift` or generate a new one via Veriff's `POST /v1/sessions`.
+Each tap of "Start verification" creates a fresh session via `POST /v1/sessions` and launches the Veriff SDK with the resulting URL.
 
 ## Possible next steps
 
 - Add a unit test target — every layer is mockable through its protocol.
-- Replace `SessionRepository` with a `BackendSessionRepository` once the backend endpoint exists.
-- Move the demo URL out of source code (Info.plist, `.xcconfig`, or remote config).
+- Replace `HTTPSessionRepository` with a `BackendSessionRepository` once the backend endpoint exists.

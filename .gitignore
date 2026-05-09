@@ -63,3 +63,4 @@ Icon
 *.env
 .env.local
 secrets.plist
+veriffDemo/Secrets.plist
