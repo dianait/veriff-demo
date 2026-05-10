@@ -2,9 +2,9 @@ import SwiftUI
 
 enum Theme {
     enum Colors {
-        static let brand = Color(red: 0.03, green: 0.38, blue: 0.34)
-        static let background = Color(red: 0.96, green: 0.98, blue: 0.97)
-        static let cardSurface = Color.white
+        static let brand = Color("Brand")
+        static let background = Color("Background")
+        static let cardSurface = Color("CardSurface")
         static let success = Color.green
         static let warning = Color.orange
         static let error = Color.red

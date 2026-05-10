@@ -1,5 +1,8 @@
 # veriffDemo
 
+
+![Veriff iOS SDK](./public/veriff-demo.gif)
+
 Demo iOS app showing how to integrate the [Veriff iOS SDK](https://github.com/Veriff/veriff-ios-spm) with Clean Architecture, SOLID principles, and modern SwiftUI.
 
 A single screen creates a verification session against Veriff's `POST /v1/sessions` and immediately launches the SDK with the resulting URL. Every tap produces a fresh session — there is no hardcoded URL.

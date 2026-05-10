@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct VerificationView: View {
-    @State var viewModel: VerificationViewModel
+    let viewModel: VerificationViewModel
 
     var body: some View {
         VStack(spacing: 24) {
@@ -54,7 +54,7 @@ struct VerificationView: View {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
                     .fill(Theme.Colors.cardSurface)
-                    .shadow(color: .black.opacity(0.08), radius: 20, y: 8)
+                    .shadow(color: .black.opacity(0.18), radius: 20, y: 8)
             )
             .padding(.horizontal, 24)
 
@@ -106,6 +106,7 @@ private struct StatusBanner: View {
 
 #Preview("Idle") {
     VerificationView(viewModel: .preview())
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Loading") {

@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "veriff-logo-w.png",
+      "filename" : "images copy 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "veriff-logo.png",
+      "filename" : "images.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
