@@ -14,16 +14,7 @@ final class VerificationViewModel {
 
     func startVerification() async {
         state = .loading
-        let result = await verificationProvider.verify()
-        state = map(result)
-    }
-
-    private func map(_ result: VerificationResult) -> VerificationState {
-        switch result {
-        case .completed: return .completed
-        case .cancelled: return .cancelled
-        case .failed(let error): return .failed(error.message)
-        }
+        state = await verificationProvider.verify().state
     }
 }
 
