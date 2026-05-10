@@ -53,19 +53,27 @@ How the config is loaded:
 
 ### A note on doing this in production
 
-The Veriff docs do not explicitly forbid calling `POST /v1/sessions` from a mobile app. It works for sandbox / personal exploration, but **in a real product it should not be done from the device.** The recommended architecture is:
+We do not recommend performing `POST /v1/sessions` directly from a mobile app. While this approach is acceptable for sandbox or personal exploration purposes, production integrations should create sessions through a backend service instead.
 
-1. The iOS app calls **your own backend**, authenticated as the end-user.
-2. Your backend calls Veriff's `POST /v1/sessions` with the private `X-AUTH-CLIENT` API key.
+The recommended architecture is:
+
+1. The iOS app calls your own backend, authenticated as the end user.
+
+2. Your backend calls Veriff’s `POST /v1/sessions` using the private `X-AUTH-CLIENT` API key.
+
 3. Your backend returns the resulting `verification.url` to the app.
+
 4. The app passes that URL to the Veriff SDK.
 
 Why:
 
-- The Veriff API key never ships in the mobile binary (binaries are inspectable).
-- The session is bound to your authenticated user on your side.
-- You can apply rate limiting, fraud signals, and analytics centrally.
-- You persist the user ↔ Veriff session mapping for webhooks.
+- The Veriff API key never ships inside the mobile binary, since mobile applications are inherently inspectable.
+
+- The verification session remains associated with your authenticated user on your backend.
+
+- You can apply rate limiting, fraud detection, telemetry, and analytics centrally.
+
+- You can persist the user ↔ Veriff session mapping for webhook handling and auditing.
 
 Because the only seam Presentation depends on is `VerificationProviderProtocol`, swapping `HTTPSessionRepository` for a `BackendSessionRepository` is a one-line change inside `DependencyContainer`. Nothing in Presentation or Domain changes — that is the practical payoff of the layered architecture.
 
