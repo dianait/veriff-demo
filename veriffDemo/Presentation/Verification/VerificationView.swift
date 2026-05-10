@@ -34,6 +34,7 @@ struct VerificationView: View {
 }
 
 private struct VerificationCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let state: VerificationState
     let buttonTitle: String
     let action: () -> Void
@@ -48,7 +49,7 @@ private struct VerificationCard: View {
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
                 .fill(Theme.Colors.cardSurface)
-                .shadow(color: .black.opacity(0.18), radius: 20, y: 8)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.18), radius: colorScheme == .dark ? 12 : 20, y: 6)
         )
         .padding(.horizontal, 24)
     }
@@ -60,7 +61,7 @@ private struct VerificationHeader: View {
             Image(.veriff)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 160)
+                .frame(maxWidth: 160)
                 .accessibilityHidden(true)
 
             Text("DEMO")
