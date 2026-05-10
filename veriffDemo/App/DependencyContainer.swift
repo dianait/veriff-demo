@@ -28,7 +28,7 @@ final class DependencyContainer {
 }
 
 private struct UnconfiguredSessionRepository: SessionRepositoryProtocol {
-    func createSession() async throws -> VerificationSession {
+    nonisolated func createSession() async throws -> VerificationSession {
         throw VerificationError.missingConfiguration
     }
 }
