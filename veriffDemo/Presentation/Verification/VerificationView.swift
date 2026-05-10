@@ -6,69 +6,22 @@ struct VerificationView: View {
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
-
-            VStack(spacing: 16) {
-                Image("veriff")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 160)
-                    .accessibilityHidden(true)
-
-                Text("DEMO")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .tracking(1.5)
-                    .foregroundStyle(.secondary)
-
-                Text("Verify your identity securely")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .multilineTextAlignment(.center)
-
-                Text("Start a sample verification flow using the Veriff iOS SDK.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-
-                StatusBanner(state: viewModel.state)
-
-                Button {
-                    Task { await viewModel.startVerification() }
-                } label: {
-                    HStack(spacing: 10) {
-                        if viewModel.state == .loading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "checkmark.shield.fill")
-                        }
-                        Text(buttonTitle)
-                            .fontWeight(.semibold)
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(viewModel.state == .loading)
-                .padding(.top, 8)
-                .accessibilityLabel(buttonTitle)
-                .accessibilityHint("Starts identity verification with Veriff")
-            }
-            .padding(Theme.Metrics.cardPadding)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
-                    .fill(Theme.Colors.cardSurface)
-                    .shadow(color: .black.opacity(0.18), radius: 20, y: 8)
+            VerificationCard(
+                state: viewModel.state,
+                buttonTitle: buttonTitle,
+                action: { Task { await viewModel.startVerification() } }
             )
-            .padding(.horizontal, 24)
-
             Spacer()
-
-            Text("Powered by Veriff SDK")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 24)
+            footer
         }
         .background(Theme.Colors.background)
+    }
+
+    private var footer: some View {
+        Text("Powered by Veriff SDK")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .padding(.bottom, 24)
     }
 
     private var buttonTitle: String {
@@ -77,6 +30,82 @@ struct VerificationView: View {
         case .completed, .cancelled, .failed: return "Try again"
         case .idle: return "Start verification"
         }
+    }
+}
+
+private struct VerificationCard: View {
+    let state: VerificationState
+    let buttonTitle: String
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            VerificationHeader()
+            StatusBanner(state: state)
+            ActionButton(state: state, title: buttonTitle, action: action)
+        }
+        .padding(Theme.Metrics.cardPadding)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
+                .fill(Theme.Colors.cardSurface)
+                .shadow(color: .black.opacity(0.18), radius: 20, y: 8)
+        )
+        .padding(.horizontal, 24)
+    }
+}
+
+private struct VerificationHeader: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image("veriff")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 160)
+                .accessibilityHidden(true)
+
+            Text("DEMO")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .tracking(1.5)
+                .foregroundStyle(.secondary)
+
+            Text("Verify your identity securely")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .multilineTextAlignment(.center)
+
+            Text("Start a sample verification flow using the Veriff iOS SDK.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+    }
+}
+
+private struct ActionButton: View {
+    let state: VerificationState
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                if state == .loading {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: "checkmark.shield.fill")
+                }
+                Text(title)
+                    .fontWeight(.semibold)
+            }
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(state == .loading)
+        .padding(.top, 8)
+        .accessibilityLabel(title)
+        .accessibilityHint("Starts identity verification with Veriff")
     }
 }
 
