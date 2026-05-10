@@ -6,45 +6,23 @@ import Observation
 final class VerificationViewModel {
     private(set) var state: VerificationState = .idle
 
-    private let createSessionUseCase: CreateVerificationSessionUseCaseProtocol
-    private let startVerificationUseCase: StartVerificationUseCaseProtocol
+    private let verificationProvider: VerificationProviderProtocol
 
-    init(
-        createSessionUseCase: CreateVerificationSessionUseCaseProtocol,
-        startVerificationUseCase: StartVerificationUseCaseProtocol
-    ) {
-        self.createSessionUseCase = createSessionUseCase
-        self.startVerificationUseCase = startVerificationUseCase
+    init(verificationProvider: VerificationProviderProtocol) {
+        self.verificationProvider = verificationProvider
     }
 
     func startVerification() async {
         state = .loading
-        do {
-            let session = try await createSessionUseCase.execute()
-            let result = await startVerificationUseCase.execute(session: session)
-            state = map(result)
-        } catch {
-            state = .failed(message(for: error))
-        }
+        let result = await verificationProvider.verify()
+        state = map(result)
     }
 
     private func map(_ result: VerificationResult) -> VerificationState {
         switch result {
         case .completed: return .completed
         case .cancelled: return .cancelled
-        case .failed(let error): return .failed(message(for: error))
-        }
-    }
-
-    private func message(for error: Error) -> String {
-        guard let domain = error as? VerificationError else {
-            return "Unexpected error"
-        }
-        switch domain {
-        case .missingConfiguration: return "Add VeriffAPIKey to veriffDemo/Secrets.plist and re-run"
-        case .invalidSession: return "Invalid verification session"
-        case .network: return "Network error"
-        case .unknown(let reason): return reason
+        case .failed(let error): return .failed(error.message)
         }
     }
 }
@@ -53,23 +31,15 @@ final class VerificationViewModel {
 extension VerificationViewModel {
     static func preview(state: VerificationState = .idle) -> VerificationViewModel {
         let viewModel = VerificationViewModel(
-            createSessionUseCase: PreviewCreateVerificationSessionUseCase(),
-            startVerificationUseCase: PreviewStartVerificationUseCase()
+            verificationProvider: PreviewVerificationProvider()
         )
         viewModel.state = state
         return viewModel
     }
 }
 
-private struct PreviewCreateVerificationSessionUseCase: CreateVerificationSessionUseCaseProtocol {
-    func execute() async throws -> VerificationSession {
-        VerificationSession(id: "preview", url: URL(string: "https://preview.veriff.local")!)
-    }
-}
-
-@MainActor
-private struct PreviewStartVerificationUseCase: StartVerificationUseCaseProtocol {
-    func execute(session: VerificationSession) async -> VerificationResult {
+private struct PreviewVerificationProvider: VerificationProviderProtocol {
+    func verify() async -> VerificationResult {
         try? await Task.sleep(for: .seconds(1))
         return .completed
     }

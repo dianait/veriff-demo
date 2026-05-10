@@ -3,16 +3,10 @@ import Foundation
 @MainActor
 final class DependencyContainer {
     private lazy var sessionRepository: SessionRepositoryProtocol = makeSessionRepository()
-    private lazy var verificationService: VerificationServiceProtocol = VeriffVerificationService()
-
-    private lazy var createSessionUseCase: CreateVerificationSessionUseCaseProtocol = CreateVerificationSessionUseCase(repository: sessionRepository)
-    private lazy var startVerificationUseCase: StartVerificationUseCaseProtocol = StartVerificationUseCase(service: verificationService)
+    private lazy var verificationProvider: VerificationProviderProtocol = VeriffVerificationProvider(sessionRepository: sessionRepository)
 
     func makeVerificationViewModel() -> VerificationViewModel {
-        VerificationViewModel(
-            createSessionUseCase: createSessionUseCase,
-            startVerificationUseCase: startVerificationUseCase
-        )
+        VerificationViewModel(verificationProvider: verificationProvider)
     }
 
     // The app always creates a fresh session via Veriff's POST /v1/sessions.
