@@ -57,7 +57,7 @@ private struct VerificationCard: View {
 private struct VerificationHeader: View {
     var body: some View {
         VStack(spacing: 16) {
-            Image("veriff")
+            Image(.veriff)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 160)
