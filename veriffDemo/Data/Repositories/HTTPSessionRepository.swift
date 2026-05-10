@@ -3,19 +3,10 @@ import Foundation
 nonisolated final class HTTPSessionRepository: SessionRepositoryProtocol {
     private let config: VeriffAPIConfig
     private let session: URLSession
-    private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
 
-    init(
-        config: VeriffAPIConfig,
-        session: URLSession = .shared,
-        encoder: JSONEncoder = JSONEncoder(),
-        decoder: JSONDecoder = JSONDecoder()
-    ) {
+    init(config: VeriffAPIConfig, session: URLSession = .shared) {
         self.config = config
         self.session = session
-        self.encoder = encoder
-        self.decoder = decoder
     }
 
     func createSession() async throws -> VerificationSession {
@@ -24,7 +15,7 @@ nonisolated final class HTTPSessionRepository: SessionRepositoryProtocol {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(config.apiKey, forHTTPHeaderField: "X-AUTH-CLIENT")
-        request.httpBody = try encoder.encode(CreateSessionRequestDTO())
+        request.httpBody = try JSONEncoder().encode(CreateSessionRequestDTO())
 
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse,
@@ -32,7 +23,7 @@ nonisolated final class HTTPSessionRepository: SessionRepositoryProtocol {
             throw VerificationError.network
         }
 
-        let payload = try decoder.decode(CreateSessionResponseDTO.self, from: data)
+        let payload = try JSONDecoder().decode(CreateSessionResponseDTO.self, from: data)
         return try SessionMapper.toDomain(payload)
     }
 }
