@@ -1,7 +1,6 @@
 import Foundation
 
-@MainActor
-protocol StartVerificationUseCaseProtocol {
+protocol StartVerificationUseCaseProtocol: Sendable {
     func execute(session: VerificationSession) async -> VerificationResult
 }
 
