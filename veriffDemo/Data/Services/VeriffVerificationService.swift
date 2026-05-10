@@ -12,7 +12,10 @@ final class VeriffVerificationService: NSObject, VerificationServiceProtocol {
     }
 
     func start(session: VerificationSession) async -> VerificationResult {
-        await withCheckedContinuation { continuation in
+        guard continuation == nil else {
+            return .failed(.unknown(reason: "A verification is already in progress"))
+        }
+        return await withCheckedContinuation { continuation in
             self.continuation = continuation
             veriff.startAuthentication(sessionUrl: session.url.absoluteString)
         }
