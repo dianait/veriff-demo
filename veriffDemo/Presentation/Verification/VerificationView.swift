@@ -12,6 +12,7 @@ struct VerificationView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 160)
+                    .accessibilityHidden(true)
 
                 Text("DEMO")
                     .font(.caption)
@@ -49,6 +50,8 @@ struct VerificationView: View {
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(viewModel.state == .loading)
                 .padding(.top, 8)
+                .accessibilityLabel(buttonTitle)
+                .accessibilityHint("Starts identity verification with Veriff")
             }
             .padding(Theme.Metrics.cardPadding)
             .background(
@@ -101,6 +104,8 @@ private struct StatusBanner: View {
         }
         .foregroundStyle(color)
         .padding(.top, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(text)
     }
 }
 
