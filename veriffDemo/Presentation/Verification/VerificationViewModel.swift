@@ -44,10 +44,6 @@ final class VerificationViewModel {
         case .missingConfiguration: return "Add VeriffAPIKey to veriffDemo/Secrets.plist and re-run"
         case .invalidSession: return "Invalid verification session"
         case .network: return "Network error"
-        case .cameraUnauthorized: return "Camera permission denied"
-        case .microphoneUnauthorized: return "Microphone permission denied"
-        case .deviceHasNoCamera: return "This device has no camera"
-        case .deviceHasNoMicrophone: return "This device has no microphone"
         case .unknown(let reason): return reason
         }
     }
