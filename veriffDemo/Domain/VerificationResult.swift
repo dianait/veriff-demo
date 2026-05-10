@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated enum VerificationResult: Equatable {
+enum VerificationResult: Equatable {
     case completed
     case cancelled
     case failed(VerificationError)
