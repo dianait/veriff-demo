@@ -22,8 +22,12 @@ final class VeriffVerificationProvider: NSObject, VerificationProviderProtocol {
         defer { isRunning = false }
 
         do {
-            let session = try await sessionRepository.createSession()
-            return await runSDK(with: session)
+            let session = try await sessionRepository.getSession()
+            let result = await runSDK(with: session)
+            if case .failed = result {
+                await sessionRepository.invalidate()
+            }
+            return result
         } catch let error as VerificationError {
             return .failed(error)
         } catch {

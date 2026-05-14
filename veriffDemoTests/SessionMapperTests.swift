@@ -5,6 +5,7 @@ import Foundation
 struct SessionMapperTests {
     @Test("Maps a well-formed DTO to a domain VerificationSession")
     func mapsValidDTO() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
         let dto = CreateSessionResponseDTO(
             status: "success",
             verification: .init(
@@ -18,10 +19,11 @@ struct SessionMapperTests {
             )
         )
 
-        let session = try SessionMapper.toDomain(dto)
+        let session = try SessionMapper.toDomain(dto, now: now)
 
         #expect(session.id == "abc-123")
         #expect(session.url.absoluteString == "https://magic.verify.veriff.me/v/abc")
+        #expect(session.createdAt == now)
     }
 
     @Test("Throws .invalidSession when the URL field is empty")

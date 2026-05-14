@@ -1,5 +1,6 @@
 import Foundation
 
 nonisolated protocol SessionRepositoryProtocol: Sendable {
-    func createSession() async throws -> VerificationSession
+    func getSession() async throws -> VerificationSession
+    func invalidate() async
 }

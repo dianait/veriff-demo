@@ -9,20 +9,24 @@ final class DependencyContainer {
         VerificationViewModel(verificationProvider: verificationProvider)
     }
 
-    // The app always creates a fresh session via Veriff's POST /v1/sessions.
-    // If Secrets.plist is missing or its API key is empty, return a repository that
-    // throws a clear `.missingConfiguration` so the failure surfaces in the UI
-    // instead of crashing on launch.
+    // Coordinator: HTTP remote + Keychain local. Sessions are cached for up to
+    // 7 days (Veriff's contract); the provider invalidates on terminal failures.
+    // If Secrets.plist is missing or its API key is empty, we return a repository
+    // that surfaces .missingConfiguration in the UI instead of crashing on launch.
     private func makeSessionRepository() -> SessionRepositoryProtocol {
         guard let config = VeriffAPIConfig.loadFromBundle() else {
             return UnconfiguredSessionRepository()
         }
-        return HTTPSessionRepository(config: config)
+        return SessionRepository(
+            remote: HTTPSessionRemoteDataSource(config: config),
+            local: KeychainSessionLocalDataSource()
+        )
     }
 }
 
 private struct UnconfiguredSessionRepository: SessionRepositoryProtocol {
-    nonisolated func createSession() async throws -> VerificationSession {
+    nonisolated func getSession() async throws -> VerificationSession {
         throw VerificationError.missingConfiguration
     }
+    nonisolated func invalidate() async {}
 }

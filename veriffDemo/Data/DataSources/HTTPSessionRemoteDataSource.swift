@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated final class HTTPSessionRepository: SessionRepositoryProtocol {
+nonisolated final class HTTPSessionRemoteDataSource: SessionRemoteDataSourceProtocol {
     private let config: VeriffAPIConfig
     private let session: URLSession
 
