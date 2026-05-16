@@ -17,10 +17,25 @@ struct VerificationView: View {
     }
 
     private var footer: some View {
-        Text("Powered by Veriff SDK")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .padding(.bottom, 24)
+        VStack(spacing: 8) {
+            Text("Powered by Veriff SDK")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            debugResetButton
+        }
+        .padding(.bottom, 24)
+    }
+
+    @ViewBuilder
+    private var debugResetButton: some View {
+        #if DEBUG
+        Button("Reset session") {
+            Task { await viewModel.resetSession() }
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
+        .disabled(viewModel.state == .loading)
+        #endif
     }
 }
 

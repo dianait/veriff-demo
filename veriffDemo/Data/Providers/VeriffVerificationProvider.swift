@@ -14,6 +14,10 @@ final class VeriffVerificationProvider: NSObject, VerificationProviderProtocol {
         veriff.delegate = self
     }
 
+    func invalidateSession() async {
+        await sessionRepository.invalidate()
+    }
+
     func verify() async -> VerificationResult {
         guard !isRunning else {
             return .failed(.unknown(reason: "A verification is already in progress"))

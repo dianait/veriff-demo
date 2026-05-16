@@ -58,11 +58,64 @@ struct VerificationViewModelTests {
         await task.value
         #expect(viewModel.state == .completed)
     }
+
+    @Test("resetSession invalidates the provider's session and returns to idle")
+    func resetSessionReturnsToIdle() async {
+        let provider = RecordingVerificationProvider(result: .completed)
+        let viewModel = VerificationViewModel(verificationProvider: provider)
+
+        await viewModel.startVerification()
+        #expect(viewModel.state == .completed)
+
+        await viewModel.resetSession()
+
+        #expect(viewModel.state == .idle)
+        #expect(await provider.invalidateCallCount == 1)
+    }
+
+    @Test("resetSession from idle still invalidates the provider")
+    func resetSessionFromIdle() async {
+        let provider = RecordingVerificationProvider(result: .completed)
+        let viewModel = VerificationViewModel(verificationProvider: provider)
+
+        await viewModel.resetSession()
+
+        #expect(viewModel.state == .idle)
+        #expect(await provider.invalidateCallCount == 1)
+    }
+
+    @Test("Multiple resetSession calls each invalidate the provider")
+    func resetSessionCallsAccumulate() async {
+        let provider = RecordingVerificationProvider(result: .completed)
+        let viewModel = VerificationViewModel(verificationProvider: provider)
+
+        await viewModel.resetSession()
+        await viewModel.resetSession()
+        await viewModel.resetSession()
+
+        #expect(await provider.invalidateCallCount == 3)
+    }
 }
 
 private struct StubVerificationProvider: VerificationProviderProtocol {
     let result: VerificationResult
     func verify() async -> VerificationResult { result }
+    func invalidateSession() async {}
+}
+
+private actor RecordingVerificationProvider: VerificationProviderProtocol {
+    let result: VerificationResult
+    private(set) var invalidateCallCount = 0
+
+    init(result: VerificationResult) {
+        self.result = result
+    }
+
+    func verify() async -> VerificationResult { result }
+
+    func invalidateSession() async {
+        invalidateCallCount += 1
+    }
 }
 
 private actor SuspendingVerificationProvider: VerificationProviderProtocol {
@@ -74,6 +127,8 @@ private actor SuspendingVerificationProvider: VerificationProviderProtocol {
             Task { await self.store(continuation) }
         }
     }
+
+    func invalidateSession() async {}
 
     private func store(_ continuation: CheckedContinuation<VerificationResult, Never>) {
         self.continuation = continuation

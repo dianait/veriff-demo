@@ -16,6 +16,11 @@ final class VerificationViewModel {
         state = .loading
         state = await verificationProvider.verify().state
     }
+
+    func resetSession() async {
+        await verificationProvider.invalidateSession()
+        state = .idle
+    }
 }
 
 #if DEBUG
@@ -34,5 +39,6 @@ private struct PreviewVerificationProvider: VerificationProviderProtocol {
         try? await Task.sleep(for: .seconds(1))
         return .completed
     }
+    func invalidateSession() async {}
 }
 #endif
